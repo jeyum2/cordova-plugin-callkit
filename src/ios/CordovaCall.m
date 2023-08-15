@@ -15,6 +15,8 @@ NSMutableDictionary *callbackIds;
 NSDictionary* pendingCallFromRecents;
 BOOL monitorAudioRouteChange = NO;
 BOOL enableDTMF = NO;
+// TODO: add to init params
+BOOL callbackOnce = YES;
 
 - (void)pluginInitialize
 {
@@ -286,7 +288,11 @@ BOOL enableDTMF = NO;
 {
     NSString* eventName = [command.arguments objectAtIndex:0];
     if(callbackIds[eventName] != nil) {
-        [callbackIds[eventName] addObject:command.callbackId];
+        if (callbackOnce) {
+            [callbackIds setObject:@[command.callbackId] forKey:eventName];
+        } else {
+            [callbackIds[eventName] addObject:command.callbackId];
+        }
     }
     if(pendingCallFromRecents && [eventName isEqual:@"sendCall"]) {
         NSDictionary *callData = pendingCallFromRecents;
