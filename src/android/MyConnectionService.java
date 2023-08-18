@@ -32,6 +32,9 @@ public class MyConnectionService extends ConnectionService {
 
     @Override
     public Connection onCreateIncomingConnection(final PhoneAccountHandle connectionManagerPhoneAccount, final ConnectionRequest request) {
+        String from = request.getExtras().getString("from");
+        String callId = request.getExtras().getString("callId");
+
         final Connection connection = new Connection() {
             @Override
             public void onAnswer() {
@@ -43,7 +46,7 @@ public class MyConnectionService extends ConnectionService {
                 for (final CallbackContext callbackContext : callbackContexts) {
                     CordovaCall.getCordova().getThreadPool().execute(new Runnable() {
                         public void run() {
-                            PluginResult result = new PluginResult(PluginResult.Status.OK, "answer event called successfully");
+                            PluginResult result = new PluginResult(PluginResult.Status.OK, callId);
                             result.setKeepCallback(true);
                             callbackContext.sendPluginResult(result);
                         }
@@ -61,7 +64,7 @@ public class MyConnectionService extends ConnectionService {
                 for (final CallbackContext callbackContext : callbackContexts) {
                     CordovaCall.getCordova().getThreadPool().execute(new Runnable() {
                         public void run() {
-                            PluginResult result = new PluginResult(PluginResult.Status.OK, "reject event called successfully");
+                            PluginResult result = new PluginResult(PluginResult.Status.OK, callId);
                             result.setKeepCallback(true);
                             callbackContext.sendPluginResult(result);
                         }
@@ -84,7 +87,7 @@ public class MyConnectionService extends ConnectionService {
                 for (final CallbackContext callbackContext : callbackContexts) {
                     CordovaCall.getCordova().getThreadPool().execute(new Runnable() {
                         public void run() {
-                            PluginResult result = new PluginResult(PluginResult.Status.OK, "hangup event called successfully");
+                            PluginResult result = new PluginResult(PluginResult.Status.OK, callId);
                             result.setKeepCallback(true);
                             callbackContext.sendPluginResult(result);
                         }
@@ -92,7 +95,7 @@ public class MyConnectionService extends ConnectionService {
                 }
             }
         };
-        connection.setAddress(Uri.parse(request.getExtras().getString("from")), TelecomManager.PRESENTATION_ALLOWED);
+        connection.setAddress(Uri.parse(from), TelecomManager.PRESENTATION_ALLOWED);
         Icon icon = CordovaCall.getIcon();
         if(icon != null) {
             StatusHints statusHints = new StatusHints((CharSequence)"", icon, new Bundle());

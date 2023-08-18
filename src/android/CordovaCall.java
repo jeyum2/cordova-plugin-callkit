@@ -38,6 +38,7 @@ public class CordovaCall extends CordovaPlugin {
     private PhoneAccount phoneAccount;
     private CallbackContext callbackContext;
     private String appName;
+    private String callId;
     private String from;
     private String to;
     private String realCallTo;
@@ -46,6 +47,7 @@ public class CordovaCall extends CordovaPlugin {
     private static CordovaWebView cordovaWebView;
     private static Icon icon;
     private static CordovaCall instance;
+    private boolean callbackOnce = true;
 
     public static HashMap<String, ArrayList<CallbackContext>> getCallbackContexts() {
         return callbackContextMap;
@@ -55,8 +57,8 @@ public class CordovaCall extends CordovaPlugin {
         return cordovaInterface;
     }
 
-    public static CordovaWebView getWebView() { 
-        return cordovaWebView; 
+    public static CordovaWebView getWebView() {
+        return cordovaWebView;
     }
 
     public static Icon getIcon() {
@@ -75,17 +77,17 @@ public class CordovaCall extends CordovaPlugin {
         appName = getApplicationName(this.cordova.getActivity().getApplicationContext());
         handle = new PhoneAccountHandle(new ComponentName(this.cordova.getActivity().getApplicationContext(),MyConnectionService.class),appName);
         tm = (TelecomManager)this.cordova.getActivity().getApplicationContext().getSystemService(this.cordova.getActivity().getApplicationContext().TELECOM_SERVICE);
-        if(android.os.Build.VERSION.SDK_INT >= 26) {
-          phoneAccount = new PhoneAccount.Builder(handle, appName)
-                  .setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)
-                  .build();
-          tm.registerPhoneAccount(phoneAccount);
-        } else if(android.os.Build.VERSION.SDK_INT >= 23) {
+        // if(android.os.Build.VERSION.SDK_INT >= 26) {
+        //   phoneAccount = new PhoneAccount.Builder(handle, appName)
+        //           .setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)
+        //           .build();
+        //   tm.registerPhoneAccount(phoneAccount);
+        // } else if(android.os.Build.VERSION.SDK_INT >= 23) {
           phoneAccount = new PhoneAccount.Builder(handle, appName)
                    .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER)
                    .build();
-          tm.registerPhoneAccount(phoneAccount);          
-        }
+          tm.registerPhoneAccount(phoneAccount);
+        // }
         callbackContextMap.put("answer",new ArrayList<CallbackContext>());
         callbackContextMap.put("reject",new ArrayList<CallbackContext>());
         callbackContextMap.put("hangup",new ArrayList<CallbackContext>());
@@ -114,6 +116,7 @@ public class CordovaCall extends CordovaPlugin {
                 }
             } else {
                 from = args.getString(0);
+                callId = args.getString(1);
                 permissionCounter = 2;
                 pendingAction = "receiveCall";
                 this.checkCallPermission();
@@ -180,23 +183,25 @@ public class CordovaCall extends CordovaPlugin {
         } else if (action.equals("registerEvent")) {
             String eventType = args.getString(0);
             ArrayList<CallbackContext> callbackContextList = callbackContextMap.get(eventType);
+            if (callbackOnce) {
+                callbackContextList.clear();
+            }
             callbackContextList.add(this.callbackContext);
             return true;
         } else if (action.equals("setAppName")) {
             String appName = args.getString(0);
             handle = new PhoneAccountHandle(new ComponentName(this.cordova.getActivity().getApplicationContext(),MyConnectionService.class),appName);
-            if(android.os.Build.VERSION.SDK_INT >= 26) {
+            // if(android.os.Build.VERSION.SDK_INT >= 26) {
+            //   phoneAccount = new PhoneAccount.Builder(handle, appName)
+            //       .setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)
+            //       .build();
+            //   tm.registerPhoneAccount(phoneAccount);
+            // } else if(android.os.Build.VERSION.SDK_INT >= 23) {
               phoneAccount = new PhoneAccount.Builder(handle, appName)
-                  .setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)
+                  .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER)
                   .build();
               tm.registerPhoneAccount(phoneAccount);
-            }
-            if(android.os.Build.VERSION.SDK_INT >= 23) {
-              phoneAccount = new PhoneAccount.Builder(handle, appName)
-                   .setCapabilities(PhoneAccount.CAPABILITY_CALL_PROVIDER)
-                   .build();
-              tm.registerPhoneAccount(phoneAccount);
-            }
+            // }
             this.callbackContext.success("App Name Changed Successfully");
             return true;
         } else if (action.equals("setIcon")) {
@@ -267,6 +272,7 @@ public class CordovaCall extends CordovaPlugin {
     private void receiveCall() {
         Bundle callInfo = new Bundle();
         callInfo.putString("from",from);
+        callInfo.putString("callId",callId);
         tm.addNewIncomingCall(handle, callInfo);
         permissionCounter = 0;
         this.callbackContext.success("Incoming call successful");
