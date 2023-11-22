@@ -601,6 +601,7 @@ BOOL callbackOnce = YES;
 
     @try {
         NSObject* caller = [data objectForKey:@"Caller"];
+        hasVideo = ([caller valueForKey:@"audio"] != nil) ? NO : YES;
         NSArray* args = [NSArray arrayWithObjects:[caller valueForKey:@"Username"], [caller valueForKey:@"ConnectionId"], nil];
 
         CDVInvokedUrlCommand* newCommand = [[CDVInvokedUrlCommand alloc] initWithArguments:args callbackId:@"" className:self.VoIPPushClassName methodName:self.VoIPPushMethodName];
