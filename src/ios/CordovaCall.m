@@ -178,11 +178,13 @@ BOOL callbackOnce = YES;
     CDVPluginResult* pluginResult = nil;
     NSString* callName = [command.arguments objectAtIndex:0];
     NSString* callId = hasId?[command.arguments objectAtIndex:1]:callName;
+    NSString* userdata = [command.arguments objectAtIndex:2];
     NSUUID *callUUID = [[NSUUID alloc] init];
 
     if (hasId) {
         [[NSUserDefaults standardUserDefaults] setObject:callId forKey:[callUUID UUIDString]];
         [[NSUserDefaults standardUserDefaults] setObject:callName forKey:callId];
+        [[NSUserDefaults standardUserDefaults] setObject:userdata forKey: [NSString stringWithFormat:@"%@_userdata", callId]];
         [[NSUserDefaults standardUserDefaults] synchronize];
     }
 
@@ -485,11 +487,13 @@ BOOL callbackOnce = YES;
 {
     NSUUID *callUUID = action.callUUID;
     NSString *callId = [[NSUserDefaults standardUserDefaults] stringForKey:[callUUID UUIDString]];
+    NSString *userdata = [[NSUserDefaults standardUserDefaults] stringForKey:[NSString stringWithFormat:@"%@_userdata", callId]];
+
     [self setupAudioSession];
     [action fulfill];
     for (id callbackId in callbackIds[@"answer"]) {
         CDVPluginResult* pluginResult = nil;
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:callId];
+        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:userdata];
         [pluginResult setKeepCallbackAsBool:YES];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:callbackId];
     }
@@ -595,6 +599,9 @@ BOOL callbackOnce = YES;
     NSDictionary *data = payload.dictionaryPayload[@"data"];
     NSLog(@"[objC] received data: %@", data);
 
+    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:data options:0 error:nil];
+    NSString *strData =[[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+
     NSMutableDictionary* results = [NSMutableDictionary dictionaryWithCapacity:2];
     [results setObject:message forKey:@"function"];
     [results setObject:data forKey:@"extra"];
@@ -602,7 +609,7 @@ BOOL callbackOnce = YES;
     @try {
         NSObject* caller = [data objectForKey:@"Caller"];
         hasVideo = ([caller valueForKey:@"audio"] != nil) ? NO : YES;
-        NSArray* args = [NSArray arrayWithObjects:[caller valueForKey:@"Username"], [caller valueForKey:@"ConnectionId"], nil];
+        NSArray* args = [NSArray arrayWithObjects:[caller valueForKey:@"Username"], [caller valueForKey:@"ConnectionId"], strData, nil];
 
         CDVInvokedUrlCommand* newCommand = [[CDVInvokedUrlCommand alloc] initWithArguments:args callbackId:@"" className:self.VoIPPushClassName methodName:self.VoIPPushMethodName];
 
